@@ -209,72 +209,76 @@ def index():
 
         <!-- Thư viện QR Scanner -->
         <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-        <script>
-            let isScanning = false;
-
-            function toggleScanner() {
-                const container = document.getElementById('scanner-container');
-                container.classList.toggle('active');
-            }
-
-            async function startScanning() {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: 'environment' }
-                    });
-                    const video = document.getElementById('video');
-                    video.srcObject = stream;
-                    isScanning = true;
-                    scan();
-                } catch (error) {
-                    alert('Cannot access camera: ' + error.message);
-                }
-            }
-
-            function scan() {
-                if (!isScanning) return;
-
+        # Tìm cái này trong HTML (khoảng dòng 200-250):
+    <script>
+        let isScanning = false;
+        
+        function toggleScanner() {
+            const container = document.getElementById('scanner-container');
+            container.classList.toggle('active');
+        }
+        
+        async function startScanning() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
                 const video = document.getElementById('video');
-                const canvas = document.getElementById('canvas');
-                const canvasContext = canvas.getContext('2d');
-
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-                if (code) {
-                    isScanning = false;
-                    video.srcObject.getTracks().forEach(track => track.stop());
-
-                    // Parse QR data
-                    const data = JSON.parse(code.data);
-
-                    const result = document.getElementById('result');
-                    const resultText = document.getElementById('result-text');
-
-                    resultText.innerHTML = `
-                        <strong>${data.title}</strong><br>
-                        Author: ${data.author}<br>
-                        Year: ${data.year}<br>
-                        ISBN: ${data.isbn}<br>
-                        <em>${data.description}</em>
-                    `;
-                    result.classList.add('active');
-                }
-
+                video.srcObject = stream;
+                isScanning = true;
+                
+                // ✅ THÊM CÁI NÀY: Đợi video load xong
+                video.onloadedmetadata = () => {
+                    scan();
+                };
+            } catch (error) {
+                alert('Cannot access camera: ' + error.message);
+            }
+        }
+        
+        function scan() {
+            if (!isScanning) return;
+            
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const canvasContext = canvas.getContext('2d');
+            
+            // ✅ THÊM CHECK: Video phải ready
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
                 requestAnimationFrame(scan);
+                return;
             }
-
-            function downloadQR() {
-                const link = document.createElement('a');
-                link.href = '/generate-qr?download=true';
-                link.download = 'book_qr_code.png';
-                link.click();
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            
+            if (code) {
+                isScanning = false;
+                video.srcObject.getTracks().forEach(track => track.stop());
+                
+                // Parse QR data
+                const data = JSON.parse(code.data);
+                
+                const result = document.getElementById('result');
+                const resultText = document.getElementById('result-text');
+                
+                resultText.innerHTML = `
+                    <strong>${data.title}</strong><br>
+                    Author: ${data.author}<br>
+                    Year: ${data.year}<br>
+                    ISBN: ${data.isbn}<br>
+                    <em>${data.description}</em>
+                `;
+                result.classList.add('active');
             }
-        </script>
+            
+            requestAnimationFrame(scan);
+        }
+    </script>
     </body>
     </html>
     '''
