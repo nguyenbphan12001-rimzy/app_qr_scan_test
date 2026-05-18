@@ -6,7 +6,7 @@ from io import BytesIO
 app = Flask(__name__)
 
 BOOK_INFO = {
-    "title": "Những Đứa Trẻ Không Gia Đình",
+    "title": "Không Gia Đình",
     "author": "Hector Malot",
     "year": 1878,
     "description": "Tiểu thuyết cảm động về những đứa trẻ bất hạnh",
